@@ -1,5 +1,7 @@
 version: 2
 
+project_name: quark-mcp
+
 before:
   hooks:
     - go mod tidy
@@ -15,16 +17,22 @@ builds:
       - amd64
       - arm64
     main: .
-    binary: quark-nd-mcp
+    binary: quark-mcp
+    ldflags:
+      - -s -w -X github.com/chiehw/quark-mcp/internal/version.Version={{.Version}}
 
 archives:
   - formats:
       - tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ if eq .Os \"darwin\" }}{{ if eq .Arch \"arm64\" }}apple_silicon{{ else }}intel{{ end }}{{ else }}{{ .Arch }}{{ end }}"
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}-{{ .Arch }}"
     format_overrides:
       - goos: windows
         formats:
           - zip
+
+release:
+  extra_files:
+    - glob: ./mcpb-dist/*.mcpb
 
 changelog:
   sort: asc

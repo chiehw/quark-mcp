@@ -8,36 +8,41 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/MichealJl/quark-nd-mcp/config"
-	"github.com/MichealJl/quark-nd-mcp/mcp"
+	"github.com/chiehw/quark-mcp/config"
+	"github.com/chiehw/quark-mcp/mcp"
 )
 
 const usage = `Quark Net Disk MCP Server
 
 Usage:
-  quark-nd-mcp [flags]              Run the MCP server
-  quark-nd-mcp config <command>     Manage configuration
+  quark-mcp [flags]              Run the MCP server
+  quark-mcp config <command>     Manage configuration
+
+Cookie:
+  QUARK_COOKIE                      Preferred source. When set, JSON config is not required.
+  config.json cookie                Fallback at ~/.quark-mcp/config.json or -config
 
 Config Commands:
   config init                       Initialize config file
   config set <key> <value>          Set a config value
-  config get <key>                  Get a config value
-  config show                       Show all config values
+  config get <key>                  Get a config value (cookie is masked)
+  config show                       Show all config values (cookie is masked)
   config path                       Show config file path
 
 Config Keys:
   cookie                            Quark drive cookie (required)
 
 Flags:
-  -config <path>                    Path to config file (default: ~/.quark-nd-disk/config.json)
+  -config <path>                    Path to config file (default: ~/.quark-mcp/config.json)
   -h, -help                         Show this help message
 
 Examples:
-  quark-nd-mcp config init
-  quark-nd-mcp config set cookie "your_cookie_here"
-  quark-nd-mcp config show
-  quark-nd-mcp                      # Run MCP server
-  quark-nd-mcp -config /path/to/config.json
+  export QUARK_COOKIE="your_cookie_here"
+  quark-mcp
+  quark-mcp config init
+  quark-mcp config set cookie "your_cookie_here"
+  quark-mcp config show
+  quark-mcp -config /path/to/config.json
 `
 
 func main() {
@@ -68,7 +73,7 @@ func main() {
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Run 'quark-nd-mcp config init' to create a config file\n")
+		fmt.Fprintf(os.Stderr, "Set QUARK_COOKIE, or run 'quark-mcp config init' to create a config file\n")
 		os.Exit(1)
 	}
 
@@ -130,12 +135,13 @@ func handleConfigCommand(args []string) {
 			path = config.DefaultConfigPath
 		}
 		fmt.Printf("Config file created at: %s\n", path)
-		fmt.Println("Please set your cookie:")
-		fmt.Println("  quark-nd-mcp config set cookie \"your_cookie_here\"")
+		fmt.Println("Set QUARK_COOKIE, or store a cookie in the config file:")
+		fmt.Println("  export QUARK_COOKIE=\"your_cookie_here\"")
+		fmt.Println("  quark-mcp config set cookie \"your_cookie_here\"")
 
 	case "set":
 		if len(cmdArgs) < 3 {
-			fmt.Fprintln(os.Stderr, "Usage: quark-nd-mcp config set <key> <value>")
+			fmt.Fprintln(os.Stderr, "Usage: quark-mcp config set <key> <value>")
 			fmt.Fprintln(os.Stderr, "Keys: cookie")
 			os.Exit(1)
 		}
@@ -149,7 +155,7 @@ func handleConfigCommand(args []string) {
 
 	case "get":
 		if len(cmdArgs) < 2 {
-			fmt.Fprintln(os.Stderr, "Usage: quark-nd-mcp config get <key>")
+			fmt.Fprintln(os.Stderr, "Usage: quark-mcp config get <key>")
 			fmt.Fprintln(os.Stderr, "Keys: cookie")
 			os.Exit(1)
 		}
@@ -167,21 +173,14 @@ func handleConfigCommand(args []string) {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
-		path := configPath
-		if path == "" {
-			path = config.DefaultConfigPath
-		}
+		path := config.ResolvePath(configPath)
 		fmt.Printf("Config file: %s\n\n", path)
 		for k, v := range values {
 			fmt.Printf("%s: %s\n", k, v)
 		}
 
 	case "path":
-		path := configPath
-		if path == "" {
-			path = config.DefaultConfigPath
-		}
-		fmt.Println(path)
+		fmt.Println(config.ResolvePath(configPath))
 
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown config command: %s\n", cmdArgs[0])

@@ -1,6 +1,8 @@
 # Binaries
-quark-nd-mcp
+quark-mcp
+quark-mcp.exe
 dist/
+mcpb-dist/
 
 # IDE
 .idea/

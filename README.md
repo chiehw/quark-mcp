@@ -1,6 +1,10 @@
 # 夸克网盘 MCP Server
 
-基于 Go 语言实现的夸克网盘 Model Context Protocol (MCP) 服务器。
+基于 Go 实现的夸克网盘 [Model Context Protocol](https://modelcontextprotocol.io) (MCP) 服务器，通过 stdio 提供文件管理、搜索、上传下载和分享转存能力。
+
+仓库：[`https://github.com/chiehw/quark-mcp`](https://github.com/chiehw/quark-mcp)
+
+可执行文件名为 `quark-mcp`（Windows 为 `quark-mcp.exe`）。
 
 ## 功能特性
 
@@ -19,36 +23,95 @@
 - **获取分享详情** - 获取分享链接中指定文件夹的文件列表
 - **保存分享文件** - 将分享链接中的文件保存到自己的网盘
 
+## 快速开始
+
+1. 从 [GitHub Releases](https://github.com/chiehw/quark-mcp/releases) 下载对应系统和 CPU 架构的安装包。
+2. 准备夸克网盘 Cookie（见下方「如何获取 Cookie」）。
+3. 通过 `QUARK_COOKIE` 启动服务器，或在支持 MCPB 的桌面客户端中安装 `.mcpb` 并在界面中填写 Cookie。
+
+```bash
+export QUARK_COOKIE="你的夸克网盘cookie"
+./quark-mcp
+```
+
+不要把真实 Cookie 写进仓库、文档、命令行历史以外的公开位置，或 MCPB 包内容。
+
 ## 安装
 
-### 下载预编译二进制文件
+GitHub Release 同时提供普通压缩包和 MCPB 包。选择时同时匹配**操作系统**和 **CPU 架构**。
 
-从 GitHub Releases 下载适合您平台的最新版本：
+| 系统 | 架构 | 普通压缩包 | MCPB |
+|------|------|------------|------|
+| macOS | Apple Silicon (arm64) | `quark-mcp_*_darwin-arm64.tar.gz` | `quark-mcp_*_darwin-arm64.mcpb` |
+| macOS | Intel (amd64) | `quark-mcp_*_darwin-amd64.tar.gz` | `quark-mcp_*_darwin-amd64.mcpb` |
+| Linux | x64 (amd64) | `quark-mcp_*_linux-amd64.tar.gz` | `quark-mcp_*_linux-amd64.mcpb` |
+| Linux | ARM64 | `quark-mcp_*_linux-arm64.tar.gz` | `quark-mcp_*_linux-arm64.mcpb` |
+| Windows | x64 (amd64) | `quark-mcp_*_windows-amd64.zip` | `quark-mcp_*_windows-amd64.mcpb` |
+| Windows | ARM64 | `quark-mcp_*_windows-arm64.zip` | `quark-mcp_*_windows-arm64.mcpb` |
 
-| 平台 | 架构 | 下载链接 |
-|------|------|----------|
-| macOS | Apple Silicon (M1/M2/M3/M4) | [quark-nd-mcp_darwin_apple_silicon.tar.gz](https://github.com/MichealJl/quark-nd-mcp/releases) |
-| macOS | Intel | [quark-nd-mcp_darwin_intel.tar.gz](https://github.com/MichealJl/quark-nd-mcp/releases) |
-| Linux | x64 | [quark-nd-mcp_linux_amd64.tar.gz](https://github.com/MichealJl/quark-nd-mcp/releases) |
-| Linux | ARM64 | [quark-nd-mcp_linux_arm64.tar.gz](https://github.com/MichealJl/quark-nd-mcp/releases) |
-| Windows | x64 | [quark-nd-mcp_windows_amd64.zip](https://github.com/MichealJl/quark-nd-mcp/releases) |
-| Windows | ARM64 | [quark-nd-mcp_windows_arm64.zip](https://github.com/MichealJl/quark-nd-mcp/releases) |
+最新文件见 [Releases](https://github.com/chiehw/quark-mcp/releases)。MCPB 清单里的平台字段只区分操作系统，架构以 Release 文件名为准。
+
+### MCPB 桌面扩展
+
+`.mcpb` 可在支持 MCPB 的桌面客户端（例如 Claude Desktop）中直接安装：
+
+1. 下载与本机系统和架构匹配的 `.mcpb`。
+2. 打开该文件，或将其拖到客户端的 MCP 扩展安装入口。
+3. 在安装配置界面填写夸克网盘 Cookie。该字段为必填敏感字符串，客户端会通过 `QUARK_COOKIE` 传给服务器。
+
+### 普通二进制
+
+解压后将 `quark-mcp`（Windows 为 `quark-mcp.exe`）放到可执行路径，然后用环境变量或 JSON 配置启动。
 
 ### 从源码编译
 
 ```bash
-go build -o quark-nd-mcp .
+git clone https://github.com/chiehw/quark-mcp.git
+cd quark-mcp
+go build -o quark-mcp .
 ```
 
-## 配置
+## Cookie 配置
 
-在 `~/.quark-nd-disk/config.json` 创建配置文件：
+优先级：
+
+1. 环境变量 `QUARK_COOKIE`（非空时直接使用，不要求存在 JSON 文件）
+2. `~/.quark-mcp/config.json`，或 `-config` 指定的 JSON 文件。若新路径不存在，仍会读取旧路径 `~/.quark-nd-disk/config.json`
+
+两种来源都没有 Cookie 时，服务器会明确提示可设置 `QUARK_COOKIE` 或写入 JSON 配置。JSON 凭据文件会尽量收紧为仅当前用户可读写（`0600`）。
+
+### 环境变量
+
+```bash
+export QUARK_COOKIE="你的夸克网盘cookie"
+./quark-mcp
+```
+
+Windows PowerShell：
+
+```powershell
+$env:QUARK_COOKIE = "你的夸克网盘cookie"
+.\quark-mcp.exe
+```
+
+### JSON 兼容配置
+
+未设置 `QUARK_COOKIE` 时，继续读取 JSON 配置。默认写入 `~/.quark-mcp/config.json`：
 
 ```json
 {
   "cookie": "你的夸克网盘cookie"
 }
 ```
+
+```bash
+quark-mcp config init
+quark-mcp config set cookie "你的夸克网盘cookie"
+quark-mcp config show
+./quark-mcp -config /path/to/config.json
+```
+
+`config get` / `config show` 会掩码显示 Cookie，不会完整输出。旧版 `~/.quark-nd-disk/config.json` 若仍存在且新路径尚未创建，会继续被读取。
 
 ### 如何获取 Cookie
 
@@ -59,18 +122,20 @@ go build -o quark-nd-mcp .
 5. 找到任意请求到 `drive.quark.cn` 的请求
 6. 从请求头中复制 `Cookie` 的值
 
+Cookie 等同于账号凭证。不要提交到 Git、不要写进 MCPB 包、不要出现在公开的 Registry 元数据或命令参数里。
+
 ## 使用方法
 
 ### 运行 MCP 服务器
 
 ```bash
-./quark-nd-mcp
+./quark-mcp
 ```
 
 或使用自定义配置路径：
 
 ```bash
-./quark-nd-mcp -config /path/to/config.json
+./quark-mcp -config /path/to/config.json
 ```
 
 ### 配合 Claude Desktop 使用
@@ -80,12 +145,38 @@ go build -o quark-nd-mcp .
 ```json
 {
   "mcpServers": {
-    "quark-nd-mcp": {
-      "command": "/path/to/quark-nd-mcp"
+    "quark-mcp": {
+      "command": "/path/to/quark-mcp",
+      "env": {
+        "QUARK_COOKIE": "你的夸克网盘cookie"
+      }
     }
   }
 }
 ```
+
+如果已经用 MCPB 安装，客户端会代为写入启动命令和 `QUARK_COOKIE`，无需再手改这份 JSON。
+
+## GitHub Release 与 MCPHub Registry
+
+两者相关但不是同一件事：
+
+- **GitHub Release**：推送 `v*` 标签后，GitHub Actions 会构建 6 个平台的普通压缩包和 `.mcpb`，校验 MCPB 后再附加到 Release。用户从这里下载安装包。
+- **MCPHub Registry**（[mcphub.app](https://mcphub.app)）：公共目录收录需要维护者登录后单独提交，GitHub Actions **不会**自动上架。条目应链接本仓库和 Release 页面，安装说明需包含平台/架构选择、可执行文件安装和 `QUARK_COOKIE` 配置。公开元数据中不要填写真实 Cookie。
+
+MCPB 文件不会自动完成 Registry 上架。
+
+## MCPHub 自托管网关
+
+MCPHub 网关启动 stdio Server 时，必须在**网关所在主机或容器**中找到对应平台的 `quark-mcp` 二进制。用户自己电脑上的二进制不能直接给远端网关使用。
+
+在网关环境中：
+
+1. 安装与网关操作系统/架构匹配的二进制。
+2. 用环境变量注入 Cookie，例如 `QUARK_COOKIE`，不要把 Cookie 写进网关的公开配置或日志。
+3. 以 stdio 方式启动 `quark-mcp`。
+
+本次范围是 Registry 收录和本地 stdio 接入。如果需要 MCPHub Cloud 远程托管运行，需要另行设计 HTTP 传输、认证和部署。
 
 ## 可用工具
 
@@ -267,6 +358,38 @@ save_from_share(share_url="https://pan.quark.cn/s/abc123", dest_path="/来自分
    → 返回：{ "saved_count": 1, "saved_files": ["电影.mp4"], "folder_id": "folder_abc" }
 ```
 
+## 开发构建
+
+```bash
+go test ./...
+go build -o quark-mcp .
+```
+
+本地打包全部 MCPB 产物（需要 Node.js，以及全局 `mcpb` 或 `npx`）：
+
+```bash
+./scripts/pack-mcpb.sh 1.3.0
+```
+
+产物写入 `mcpb-dist/`，文件名包含系统和架构。推送 `v*` 标签后，GitHub Actions 会先跑测试并校验 MCPB，再和 GoReleaser 普通压缩包一起发布；MCPB 校验失败时不会发布不完整的 MCPB 资产。
+
+## 常见问题
+
+**如何选择安装包？**  
+先看操作系统，再看 CPU：Apple Silicon 用 `darwin-arm64`，Intel Mac 用 `darwin-amd64`，常见 Linux/Windows 电脑用 `amd64`，ARM 设备用 `arm64`。
+
+**MCPB 和 tar.gz/zip 有什么区别？**  
+MCPB 面向支持该格式的桌面客户端，安装时收集 Cookie。普通压缩包适合手动放置二进制，或在 MCPHub 自托管网关里启动 stdio Server。
+
+**为什么 Registry 上看不到这个项目？**  
+Registry 上架需要维护者在 MCPHub 单独提交，不会随 GitHub Release 自动完成。
+
+**网关报找不到可执行文件？**  
+把对应平台的二进制放到网关运行环境中，不要指望用户本地安装的文件能被远端网关调用。
+
+**Cookie 无效或过期？**  
+重新从浏览器复制 Cookie，更新 `QUARK_COOKIE` 或 JSON 配置后重启 Server。不要在日志里打印 Cookie。
+
 ## 许可证
 
-MIT license
+[MIT](LICENSE)

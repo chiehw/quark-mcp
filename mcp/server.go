@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/MichealJl/quark-nd-mcp/config"
-	"github.com/MichealJl/quark-nd-mcp/quark"
+	"github.com/chiehw/quark-mcp/config"
+	"github.com/chiehw/quark-mcp/internal/version"
+	"github.com/chiehw/quark-mcp/quark"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -22,8 +23,8 @@ func NewServer(cfg *config.Config) *Server {
 	client := quark.NewClient(cfg.Cookie)
 
 	server := mcp.NewServer(&mcp.Implementation{
-		Name:    "quark-nd-mcp",
-		Version: "1.0.0",
+		Name:    "quark-mcp",
+		Version: version.Version,
 	}, nil)
 
 	s := &Server{

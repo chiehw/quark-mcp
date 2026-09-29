@@ -1,4 +1,4 @@
-module github.com/MichealJl/quark-nd-mcp
+module github.com/chiehw/quark-mcp
 
 go 1.25.0
 
